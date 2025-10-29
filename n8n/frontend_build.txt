@@ -1,0 +1,388 @@
+Subject: Front-end Task Completion: UI, Movement, Animations & Collision Effects
+
+Hi Preethi,
+
+Please find the implementation details for the front-end task assigned to "UserA" (me) from the Jira requirement.
+
+The task involved:
+*   Developing UI components (main game screen, score display, and start/game over screens).
+*   Implementing character movement logic.
+*   Adding animations for character actions (e.g., eating, crashing).
+*   Implementing collision detection and effects with obstacles and game elements.
+
+Below is a single HTML file containing HTML, CSS, and JavaScript that demonstrates these functionalities. It creates a simple game-like environment where a player character (represented by a "🤖" emoji) can move using arrow keys, collect "food" (green circles triggering an "eating" animation), and "crash" into "obstacles" (red squares triggering a "crash" animation and game over).
+
+To run this code:
+1.  Save the content below as an `.html` file (e.g., `game_demo.html`).
+2.  Open the file in any modern web browser.
+
+Let me know if you need any further details or modifications.
+
+Best regards,
+
+UserA (Front-end Developer)
+
+---
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Demo: UI, Movement, Animations & Collision</title>
+    <style>
+        /* General styling for the page */
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #282c34; /* Dark background */
+            color: #fff;
+            margin: 0;
+            overflow: hidden; /* Prevent scrollbars */
+        }
+
+        /* Main game container */
+        #game-container {
+            width: 800px;
+            height: 600px;
+            background-color: #1a1e24; /* Darker game area */
+            border: 5px solid #61dafb; /* Accent border */
+            position: relative;
+            overflow: hidden; /* Keep game elements inside */
+            box-shadow: 0 0 20px rgba(97, 218, 251, 0.5); /* Glowing effect */
+        }
+
+        /* Player character styling */
+        #player {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background-color: #a2fa42; /* Default player color */
+            border-radius: 50%; /* Circle shape */
+            transition: background-color 0.1s ease-out, transform 0.1s ease-out; /* Smooth animation for actions */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            color: #333; /* Emoji color */
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5); /* Make emoji pop */
+            user-select: none; /* Prevent text selection */
+        }
+
+        /* Player eating animation */
+        #player.eating {
+            background-color: #fdd835; /* Yellow for eating */
+            transform: scale(1.1); /* Slightly grow */
+        }
+
+        /* Player crashing animation */
+        #player.crashing {
+            background-color: #f44336; /* Red for crashing */
+            transform: scale(0.8) rotate(30deg); /* Shrink and rotate */
+        }
+
+        /* Styling for game elements (obstacles and food) */
+        .obstacle, .food {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border-radius: 5px;
+        }
+
+        /* Obstacle specific styling */
+        .obstacle {
+            background-color: #e91e63; /* Pink/Red for obstacles */
+            box-shadow: 0 0 8px rgba(233, 30, 99, 0.7);
+        }
+
+        /* Food specific styling */
+        .food {
+            background-color: #4CAF50; /* Green for food */
+            border-radius: 50%; /* Circle shape */
+            box-shadow: 0 0 8px rgba(76, 175, 80, 0.7);
+        }
+
+        /* Score display */
+        #score-display {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 1.5em;
+            color: #61dafb; /* Accent color */
+            z-index: 10;
+        }
+
+        /* Overlay for start/game over screens */
+        .game-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7); /* Semi-transparent black */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 20; /* On top of other elements */
+            text-align: center;
+        }
+
+        .game-overlay h2 {
+            font-size: 3em;
+            margin-bottom: 20px;
+            color: #61dafb;
+        }
+
+        .game-overlay p {
+            font-size: 1.2em;
+            margin-bottom: 30px;
+        }
+
+        .game-overlay button {
+            padding: 15px 30px;
+            font-size: 1.2em;
+            background-color: #61dafb;
+            color: #282c34;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease; /* Smooth hover effect */
+        }
+
+        .game-overlay button:hover {
+            background-color: #21a1f1;
+        }
+
+        /* Initial display states */
+        #start-screen {
+            display: none; /* Will be shown by JS on load */
+        }
+
+        #game-over-screen {
+            display: none; /* Hidden until game over */
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="score-display">Score: 0</div>
+        <div id="player">🤖</div> <!-- Player character -->
+
+        <!-- Start Game Screen -->
+        <div id="start-screen" class="game-overlay">
+            <h2>Welcome to the Game!</h2>
+            <p>Use arrow keys to move. Avoid obstacles (red), collect food (green)!</p>
+            <button id="start-button">Start Game</button>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="game-over-screen" class="game-overlay">
+            <h2>Game Over!</h2>
+            <p id="final-score">Your Score: 0</p>
+            <button id="restart-button">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        // Get DOM elements
+        const gameContainer = document.getElementById('game-container');
+        const player = document.getElementById('player');
+        const scoreDisplay = document.getElementById('score-display');
+        const startScreen = document.getElementById('start-screen');
+        const gameOverScreen = document.getElementById('game-over-screen');
+        const startButton = document.getElementById('start-button');
+        const restartButton = document.getElementById('restart-button');
+        const finalScoreDisplay = document.getElementById('final-score');
+
+        // Game dimensions
+        const GAME_WIDTH = gameContainer.offsetWidth;
+        const GAME_HEIGHT = gameContainer.offsetHeight;
+
+        // Player state
+        let playerX = GAME_WIDTH / 2 - 20; // Initial X position (centered horizontally)
+        let playerY = GAME_HEIGHT / 2 - 20; // Initial Y position (centered vertically)
+        const PLAYER_SPEED = 5; // Pixels per frame
+        
+        // Game state
+        let score = 0;
+        let isGameOver = false;
+        let gameLoopInterval; // For element generation and collision checks
+        let spawnElementsInterval; // For periodically spawning elements
+        let activeElements = []; // Stores all active obstacles and food in the game
+
+        // --- Game State Management ---
+        function startGame() {
+            // Hide overlay screens
+            startScreen.style.display = 'none';
+            gameOverScreen.style.display = 'none';
+            
+            // Reset game state
+            isGameOver = false;
+            score = 0;
+            scoreDisplay.textContent = `Score: ${score}`;
+            
+            // Reset player position and appearance
+            playerX = GAME_WIDTH / 2 - player.offsetWidth / 2;
+            playerY = GAME_HEIGHT / 2 - player.offsetHeight / 2;
+            player.style.left = `${playerX}px`;
+            player.style.top = `${playerY}px`;
+            player.classList.remove('crashing'); // Ensure crash animation is off
+
+            // Clear any existing game elements from previous rounds
+            activeElements.forEach(el => el.remove());
+            activeElements = [];
+
+            // Start game loops
+            gameLoopInterval = setInterval(gameLoop, 20); // Main game logic update every 20ms
+            spawnElementsInterval = setInterval(spawnElement, 1500); // Spawn new elements every 1.5 seconds
+            requestAnimationFrame(updatePlayerPosition); // Start the continuous player movement loop
+        }
+
+        function endGame() {
+            isGameOver = true;
+            // Stop all game loops
+            clearInterval(gameLoopInterval);
+            clearInterval(spawnElementsInterval);
+            
+            // Show game over screen with final score
+            finalScoreDisplay.textContent = `Your Score: ${score}`;
+            gameOverScreen.style.display = 'flex';
+        }
+
+        // --- Player Movement ---
+        let keysPressed = {}; // Object to track currently pressed keys
+        
+        // Listen for key presses to update keysPressed object
+        document.addEventListener('keydown', (e) => {
+            if (!isGameOver) {
+                keysPressed[e.key] = true;
+            }
+        });
+        
+        // Listen for key releases to update keysPressed object
+        document.addEventListener('keyup', (e) => {
+            keysPressed[e.key] = false;
+        });
+
+        // Function to update player's position based on pressed keys
+        function updatePlayerPosition() {
+            if (isGameOver) return; // Stop movement if game is over
+
+            let newPlayerX = playerX;
+            let newPlayerY = playerY;
+
+            // Adjust position based on arrow keys
+            if (keysPressed['ArrowUp']) newPlayerY -= PLAYER_SPEED;
+            if (keysPressed['ArrowDown']) newPlayerY += PLAYER_SPEED;
+            if (keysPressed['ArrowLeft']) newPlayerX -= PLAYER_SPEED;
+            if (keysPressed['ArrowRight']) newPlayerX += PLAYER_SPEED;
+
+            // Boundary checks to keep player within game container
+            newPlayerX = Math.max(0, Math.min(newPlayerX, GAME_WIDTH - player.offsetWidth));
+            newPlayerY = Math.max(0, Math.min(newPlayerY, GAME_HEIGHT - player.offsetHeight));
+
+            // Update player's actual position
+            playerX = newPlayerX;
+            playerY = newPlayerY;
+
+            // Apply new position to DOM element
+            player.style.left = `${playerX}px`;
+            player.style.top = `${playerY}px`;
+
+            requestAnimationFrame(updatePlayerPosition); // Request next animation frame for smooth movement
+        }
+
+        // --- Element Spawning (Obstacles & Food) ---
+        function spawnElement() {
+            if (isGameOver) return;
+
+            const isObstacle = Math.random() < 0.7; // 70% chance to spawn an obstacle, 30% for food
+            const element = document.createElement('div');
+            element.classList.add(isObstacle ? 'obstacle' : 'food'); // Add appropriate class
+            element.dataset.type = isObstacle ? 'obstacle' : 'food'; // Store type in dataset
+
+            const size = 30; // Consistent size for spawned elements
+            // Random position within game container bounds
+            const x = Math.random() * (GAME_WIDTH - size);
+            const y = Math.random() * (GAME_HEIGHT - size);
+
+            element.style.left = `${x}px`;
+            element.style.top = `${y}px`;
+            element.style.width = `${size}px`;
+            element.style.height = `${size}px`;
+
+            gameContainer.appendChild(element); // Add element to the game
+            activeElements.push(element); // Track it in our array
+        }
+
+        // --- Collision Detection ---
+        function checkCollision(obj1, obj2) {
+            // Get bounding rectangles for collision detection
+            const rect1 = obj1.getBoundingClientRect();
+            const rect2 = obj2.getBoundingClientRect();
+
+            // Check if rectangles overlap
+            return !(rect1.right < rect2.left ||
+                     rect1.left > rect2.right ||
+                     rect1.bottom < rect2.top ||
+                     rect1.top > rect2.bottom);
+        }
+
+        // Handle effects based on element type
+        function handleCollision(element) {
+            const type = element.dataset.type;
+
+            if (type === 'food') {
+                score++;
+                scoreDisplay.textContent = `Score: ${score}`;
+                
+                // Eating animation: Add class, then remove after a short delay
+                player.classList.add('eating');
+                setTimeout(() => player.classList.remove('eating'), 150);
+            } else if (type === 'obstacle') {
+                // Crashing animation: Add class
+                player.classList.add('crashing');
+                endGame(); // End the game on collision with an obstacle
+            }
+
+            // Remove the element from DOM and activeElements array after collision
+            element.remove();
+            activeElements = activeElements.filter(el => el !== element);
+        }
+
+        // --- Main Game Loop ---
+        function gameLoop() {
+            if (isGameOver) return;
+
+            // Iterate through active elements to check for collisions with the player
+            // Loop backwards to safely remove elements during iteration
+            for (let i = activeElements.length - 1; i >= 0; i--) {
+                const element = activeElements[i];
+                if (checkCollision(player, element)) {
+                    handleCollision(element);
+                    // Collision handler modifies activeElements, so no need to adjust 'i'
+                }
+            }
+        }
+
+        // --- Event Listeners for UI Buttons ---
+        startButton.addEventListener('click', startGame);
+        restartButton.addEventListener('click', startGame);
+
+        // --- Initial Setup on page load ---
+        window.onload = () => {
+            startScreen.style.display = 'flex'; // Show the start screen initially
+            // Position player div initially even before game starts
+            player.style.left = `${playerX}px`;
+            player.style.top = `${playerY}px`;
+        };
+    </script>
+</body>
+</html>
+```
