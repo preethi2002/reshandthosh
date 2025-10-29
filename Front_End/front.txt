@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Core Gameplay Engine</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #222; display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: sans-serif; }
+        canvas { background: #000; border: 2px solid #555; }
+        #game-ui { position: absolute; top: 10px; left: 10px; color: white; font-size: 24px; }
+        #instructions { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); color: #aaa; font-size: 16px; text-align: center; }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div id="game-ui">Score: <span id="score">0</span></div>
+    <div id="instructions">Use WASD or Arrow Keys to Move. Try to avoid the red square!</div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('score');
+
+        let score = 0;
+        let gameOver = false;
+
+        // Player object
+        const player = {
+            x: 50,
+            y: 50,
+            width: 30,
+            height: 30,
+            color: 'blue',
+            speed: 5,
+            dx: 0,
+            dy: 0,
+            isMoving: false,
+            flashTimer: 0,
+            flashDuration: 10 // frames
+        };
+
+        // Obstacle object (simple collision target)
+        const obstacle = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            width: 50,
+            height: 50,
+            color: 'red',
+            speedX: 2,
+            speedY: 2
+        };
+
+        // Input handling
+        const keys = {};
+        window.addEventListener('keydown', (e) => {
+            keys[e.key] = true;
+            player.isMoving = true;
+        });
+        window.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+            // Check if no movement keys are pressed to set isMoving to false
+            if (!keys['w'] && !keys['a'] && !keys['s'] && !keys['d'] &&
+                !keys['ArrowUp'] && !keys['ArrowLeft'] && !keys['ArrowDown'] && !keys['ArrowRight']) {
+                player.isMoving = false;
+            }
+        });
+
+        function updatePlayerMovement() {
+            player.dx = 0;
+            player.dy = 0;
+
+            if (keys['w'] || keys['ArrowUp']) player.dy = -player.speed;
+            if (keys['s'] || keys['ArrowDown']) player.dy = player.speed;
+            if (keys['a'] || keys['ArrowLeft']) player.dx = -player.speed;
+            if (keys['d'] || keys['ArrowRight']) player.dx = player.speed;
+
+            // Normalize diagonal movement speed
+            if (player.dx !== 0 && player.dy !== 0) {
+                const magnitude = Math.sqrt(player.dx * player.dx + player.dy * player.dy);
+                player.dx = (player.dx / magnitude) * player.speed;
+                player.dy = (player.dy / magnitude) * player.speed;
+            }
+
+            player.x += player.dx;
+            player.y += player.dy;
+
+            // Keep player within canvas bounds
+            if (player.x < 0) player.x = 0;
+            if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+            if (player.y < 0) player.y = 0;
+            if (player.y + player.height > canvas.height) player.y = canvas.height - player.height;
+        }
+
+        function updateObstacleMovement() {
+            obstacle.x += obstacle.speedX;
+            obstacle.y += obstacle.speedY;
+
+            // Bounce off walls
+            if (obstacle.x + obstacle.width > canvas.width || obstacle.x < 0) {
+                obstacle.speedX *= -1;
+            }
+            if (obstacle.y + obstacle.height > canvas.height || obstacle.y < 0) {
+                obstacle.speedY *= -1;
+            }
+        }
+
+        function detectCollision(rect1, rect2) {
+            return rect1.x < rect2.x + rect2.width &&
+                   rect1.x + rect1.width > rect2.x &&
+                   rect1.y < rect2.y + rect2.height &&
+                   rect1.y + rect1.height > rect2.y;
+        }
+
+        function updateGameLogic() {
+            if (gameOver) return;
+
+            updatePlayerMovement();
+            updateObstacleMovement();
+
+            // Collision detection with obstacle
+            if (detectCollision(player, obstacle)) {
+                gameOver = true;
+                player.color = 'red'; // Visual effect for collision/game over
+                alert('Game Over! Your score: ' + score);
+                document.location.reload(); // Simple restart for demo
+            }
+
+            // Simple score increment
+            if (player.isMoving && !gameOver) {
+                score++;
+                scoreDisplay.textContent = Math.floor(score / 60); // Roughly score per second
+            }
+
+            // Player flash effect when moving (simple animation)
+            if (player.isMoving) {
+                player.flashTimer++;
+                if (player.flashTimer >= player.flashDuration * 2) {
+                    player.flashTimer = 0;
+                }
+            } else {
+                player.flashTimer = 0;
+            }
+        }
+
+        function drawPlayer() {
+            ctx.fillStyle = player.color;
+            if (player.isMoving && (player.flashTimer < player.flashDuration)) {
+                 ctx.fillStyle = 'cyan'; // Flashing color
+            }
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+        }
+
+        function drawObstacle() {
+            ctx.fillStyle = obstacle.color;
+            ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas
+
+            drawPlayer();
+            drawObstacle();
+        }
+
+        // Game loop
+        function gameLoop() {
+            updateGameLogic();
+            draw();
+            requestAnimationFrame(gameLoop); // Request next frame
+        }
+
+        // Start the game
+        gameLoop();
+    </script>
+</body>
+</html>
