@@ -1,0 +1,120 @@
+require('dotenv').config();
+const express = require('express');
+const { Pool } = require('pg');
+const bodyParser = require('body-parser');
+
+const app = express();
+const port = process.env.PORT || 3000;
+
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
+const pool = new Pool({
+    user: process.env.DB_USER,
+    host: process.env.DB_HOST,
+    database: process.env.DB_NAME,
+    password: process.env.DB_PASSWORD,
+    port: process.env.DB_PORT,
+});
+
+pool.connect()
+    .catch(err => {
+        process.exit(1);
+    });
+
+app.get('/api/items', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM items ORDER BY id ASC');
+        res.status(200).json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.get('/api/items/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await pool.query('SELECT * FROM items WHERE id = $1', [id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Item not found' });
+        }
+        res.status(200).json(result.rows[0]);
+    } catch (err) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.post('/api/items', async (req, res) => {
+    const { name, description } = req.body;
+    if (!name) {
+        return res.status(400).json({ error: 'Name is required' });
+    }
+    try {
+        const result = await pool.query(
+            'INSERT INTO items (name, description) VALUES ($1, $2) RETURNING *',
+            [name, description]
+        );
+        res.status(201).json(result.rows[0]);
+    } catch (err) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.put('/api/items/:id', async (req, res) => {
+    const { id } = req.params;
+    const { name, description } = req.body;
+    if (!name && !description) {
+        return res.status(400).json({ error: 'Name or description is required for update' });
+    }
+
+    try {
+        let queryParts = [];
+        let queryValues = [];
+        let paramCount = 1;
+
+        if (name !== undefined) {
+            queryParts.push(`name = $${paramCount++}`);
+            queryValues.push(name);
+        }
+        if (description !== undefined) {
+            queryParts.push(`description = $${paramCount++}`);
+            queryValues.push(description);
+        }
+
+        if (queryParts.length === 0) {
+            return res.status(400).json({ error: 'No fields to update' });
+        }
+
+        queryValues.push(id);
+
+        const queryText = `UPDATE items SET ${queryParts.join(', ')} WHERE id = $${paramCount} RETURNING *`;
+        const result = await pool.query(queryText, queryValues);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Item not found' });
+        }
+        res.status(200).json(result.rows[0]);
+    } catch (err) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.delete('/api/items/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await pool.query('DELETE FROM items WHERE id = $1 RETURNING *', [id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Item not found' });
+        }
+        res.status(204).send();
+    } catch (err) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.use((err, req, res, next) => {
+    res.status(500).send('Something broke!');
+});
+
+app.listen(port, () => {
+});
