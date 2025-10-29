@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Engine UI</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #222;
+            font-family: Arial, sans-serif;
+            color: #eee;
+            flex-direction: column;
+        }
+        canvas {
+            background-color: #000;
+            border: 2px solid #555;
+        }
+        #game-info {
+            margin-bottom: 20px;
+            font-size: 1.2em;
+        }
+        .collision-effect {
+            animation: pulse 0.5s infinite alternate;
+        }
+        @keyframes pulse {
+            from { border-color: #555; }
+            to { border-color: red; }
+        }
+    </style>
+</head>
+<body>
+    <div id="game-info">Move with Arrow Keys! Avoid the Red Block.</div>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const player = {
+            x: 50,
+            y: canvas.height / 2 - 25,
+            width: 50,
+            height: 50,
+            speed: 5,
+            color: 'blue'
+        };
+
+        const obstacle = {
+            x: canvas.width - 100,
+            y: canvas.height / 2 - 40,
+            width: 80,
+            height: 80,
+            color: 'red'
+        };
+
+        let keys = {};
+        let collisionDetected = false;
+
+        document.addEventListener('keydown', (e) => {
+            keys[e.key] = true;
+        });
+
+        document.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+        });
+
+        function drawPlayer() {
+            ctx.fillStyle = player.color;
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+        }
+
+        function drawObstacle() {
+            ctx.fillStyle = obstacle.color;
+            ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+        }
+
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function detectCollision(obj1, obj2) {
+            return obj1.x < obj2.x + obj2.width &&
+                   obj1.x + obj1.width > obj2.x &&
+                   obj1.y < obj2.y + obj2.height &&
+                   obj1.y + obj1.height > obj2.y;
+        }
+
+        function updateGame() {
+            // Reset collision visual effect
+            if (collisionDetected) {
+                collisionDetected = false;
+                canvas.classList.remove('collision-effect');
+                player.color = 'blue';
+            }
+
+            // Player movement
+            if (keys['ArrowUp']) {
+                player.y -= player.speed;
+            }
+            if (keys['ArrowDown']) {
+                player.y += player.speed;
+            }
+            if (keys['ArrowLeft']) {
+                player.x -= player.speed;
+            }
+            if (keys['ArrowRight']) {
+                player.x += player.speed;
+            }
+
+            // Keep player within canvas bounds
+            player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
+            player.y = Math.max(0, Math.min(canvas.height - player.height, player.y));
+
+            // Collision detection
+            if (detectCollision(player, obstacle)) {
+                collisionDetected = true;
+                canvas.classList.add('collision-effect');
+                player.color = 'orange'; // Visual effect for player
+            }
+        }
+
+        function gameLoop() {
+            updateGame();
+            clearCanvas();
+            drawObstacle();
+            drawPlayer();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Start the game
+        gameLoop();
+    </script>
+</body>
+</html>
