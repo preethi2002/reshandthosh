@@ -1,0 +1,121 @@
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+// Game state variables
+const player = {
+    x: 50,
+    y: 50,
+    width: 30,
+    height: 30,
+    color: 'blue',
+    speed: 5,
+    dx: 0, // direction x
+    dy: 0  // direction y
+};
+
+const obstacle = {
+    x: 300,
+    y: 200,
+    width: 50,
+    height: 50,
+    color: 'red'
+};
+
+let collisionOccurred = false;
+
+// Draw game elements (UI)
+function draw() {
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw player
+    ctx.fillStyle = player.color;
+    ctx.fillRect(player.x, player.y, player.width, player.height);
+
+    // Draw obstacle
+    ctx.fillStyle = obstacle.color;
+    ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+
+    // Draw collision effect (if collision occurred)
+    if (collisionOccurred) {
+        ctx.font = '48px Arial';
+        ctx.fillStyle = 'yellow';
+        ctx.textAlign = 'center';
+        ctx.fillText('Collision!', canvas.width / 2, canvas.height / 2);
+    }
+}
+
+// Update game logic (animations, character movement, collision detection)
+function update() {
+    // Player movement logic
+    player.x += player.dx;
+    player.y += player.dy;
+
+    // Keep player within canvas bounds
+    if (player.x < 0) player.x = 0;
+    if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+    if (player.y < 0) player.y = 0;
+    if (player.y + player.height > canvas.height) player.y = canvas.height - player.height;
+
+    // Collision detection (AABB - Axis-Aligned Bounding Box)
+    if (player.x < obstacle.x + obstacle.width &&
+        player.x + player.width > obstacle.x &&
+        player.y < obstacle.y + obstacle.height &&
+        player.y + player.height > obstacle.y) {
+        collisionOccurred = true;
+        // Simple collision effect: change player color
+        player.color = 'purple';
+    } else {
+        collisionOccurred = false;
+        player.color = 'blue'; // Reset color if not colliding
+    }
+}
+
+// Game loop for animations
+function gameLoop() {
+    update();
+    draw();
+    requestAnimationFrame(gameLoop);
+}
+
+// Keyboard input handling for character movement
+document.addEventListener('keydown', (e) => {
+    switch (e.key) {
+        case 'ArrowUp':
+        case 'w':
+            player.dy = -player.speed;
+            break;
+        case 'ArrowDown':
+        case 's':
+            player.dy = player.speed;
+            break;
+        case 'ArrowLeft':
+        case 'a':
+            player.dx = -player.speed;
+            break;
+        case 'ArrowRight':
+        case 'd':
+            player.dx = player.speed;
+            break;
+    }
+});
+
+document.addEventListener('keyup', (e) => {
+    switch (e.key) {
+        case 'ArrowUp':
+        case 'w':
+        case 'ArrowDown':
+        case 's':
+            player.dy = 0;
+            break;
+        case 'ArrowLeft':
+        case 'a':
+        case 'ArrowRight':
+        case 'd':
+            player.dx = 0;
+            break;
+    }
+});
+
+// Start the game loop
+gameLoop();
