@@ -1,0 +1,59 @@
+import React from 'react';
+
+function App() {
+  return (
+    <div className="app-container">
+      <header className="app-header">
+        <h1>Generic Web Application</h1>
+        <nav className="main-nav">
+          <ul>
+            <li><a href="#home">Home</a></li>
+            <li><a href="#dashboard">Dashboard</a></li>
+            <li><a href="#settings">Settings</a></li>
+            <li><a href="#profile">Profile</a></li>
+            <li><button className="logout-button">Logout</button></li>
+          </ul>
+        </nav>
+      </header>
+
+      <main className="app-main-content">
+        <section className="welcome-section">
+          <h2>Welcome to Your Generic React App!</h2>
+          <p>This is a starting point for your web application's user interface. You can add more components and logic here.</p>
+          <div className="action-buttons">
+            <button className="primary-button">Get Started</button>
+            <button className="secondary-button">Learn More</button>
+          </div>
+        </section>
+
+        <section className="data-display-section">
+          <h3>Your Data Insights</h3>
+          <div className="card-grid">
+            <div className="data-card">
+              <h4>Metric 1</h4>
+              <p>1,234 units</p>
+            </div>
+            <div className="data-card">
+              <h4>Metric 2</h4>
+              <p>$5,678.90</p>
+            </div>
+            <div className="data-card">
+              <h4>Metric 3</h4>
+              <p>98% efficiency</p>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer className="app-footer">
+        <p>&copy; 2023 Generic Web Application. All rights reserved.</p>
+        <div className="social-links">
+          <a href="#privacy">Privacy Policy</a>
+          <a href="#terms">Terms of Service</a>
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+export default App;
